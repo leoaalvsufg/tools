@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Inteligente - Grupo Alves</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .crm-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 90vh;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-header {
+            background: white;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(90vh - 80px);
+        }
+
+        .crm-section {
+            display: none;
+        }
+
+        .crm-section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .customer-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .customer-card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .customer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .customer-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .customer-email {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .customer-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .customer-stat {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .customer-stat-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .customer-stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .communication-style {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .style-professional {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .style-casual {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .style-friendly {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+
+        .style-formal {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+
+        .notification.error {
+            background: #f44336;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .interaction-item {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 10px 10px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .interaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .interaction-type {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .interaction-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .sentiment-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .sentiment-positive {
+            background: #4caf50;
+        }
+
+        .sentiment-neutral {
+            background: #ffc107;
+        }
+
+        .sentiment-negative {
+            background: #f44336;
+        }
+
+        .customer-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .customer-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .topics-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .topic-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .reply-suggestions {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .suggestion-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .suggestion-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.1);
+        }
+
+        .suggestion-tone {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .suggestion-subject {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .suggestion-body {
+            color: #666;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="crm-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>👥 CRM Inteligente</h2>
+                <p>Customer Relationship Management</p>
+            </div>
+            <div class="sidebar-nav">
+                <div class="nav-item active" onclick="showSection('dashboard')">
+                    📊 Dashboard
+                </div>
+                <div class="nav-item" onclick="showSection('customers')">
+                    👤 Clientes
+                </div>
+                <div class="nav-item" onclick="showSection('interactions')">
+                    💬 Interações
+                </div>
+                <div class="nav-item" onclick="showSection('analytics')">
+                    📈 Análises
+                </div>
+                <div class="nav-item" onclick="showSection('email-assistant')">
+                    🤖 Assistente de Email
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+
+            <div class="content-body">
+                <!-- Dashboard Section -->
+                <div id="dashboard" class="crm-section active">
+                    <div class="stats-grid" id="dashboardStats">
+                        <!-- Stats will be loaded here -->
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Interações por Dia</h3>
+                        <canvas id="interactionsChart" width="400" height="200"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Distribuição de Sentimentos</h3>
+                        <canvas id="sentimentChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Customers Section -->
+                <div id="customers" class="crm-section">
+                    <div class="loading" id="customersLoading">Carregando clientes...</div>
+                    <div id="customersList"></div>
+                </div>
+
+                <!-- Interactions Section -->
+                <div id="interactions" class="crm-section">
+                    <div class="loading" id="interactionsLoading">Carregando interações...</div>
+                    <div id="interactionsList"></div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div id="analytics" class="crm-section">
+                    <div class="chart-container">
+                        <h3>Análise de Comunicação por Cliente</h3>
+                        <canvas id="communicationChart" width="400" height="200"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Tempo de Resposta Médio</h3>
+                        <canvas id="responseTimeChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Email Assistant Section -->
+                <div id="email-assistant" class="crm-section">
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3>🤖 Assistente de Resposta por Email</h3>
+                        <p>Selecione um email para gerar sugestões de resposta personalizadas baseadas no perfil do cliente.</p>
+                        
+                        <div style="margin-top: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Email ID:</label>
+                            <input type="text" id="emailIdInput" placeholder="Digite o ID do email" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                            <button class="btn btn-primary" onclick="generateReplySuggestions()" style="margin-top: 10px;">🤖 Gerar Sugestões</button>
+                        </div>
+                    </div>
+
+                    <div class="loading" id="suggestionsLoading">Gerando sugestões...</div>
+                    <div id="replySuggestions"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Detail Modal -->
+    <div class="customer-modal" id="customerModal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Perfil do Cliente</h2>
+                <button onclick="closeCustomerModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+            </div>
+            <div id="customerDetails"></div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Check if running in iframe and fix compatibility
+        const isInIframe = window !== window.top;
+
+        // Initialize Socket.IO with iframe compatibility
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            upgrade: true,
+            rememberUpgrade: true
+        });
+
+        // Fix for iframe API calls
+        function makeApiCall(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            };
+
+            return fetch(url, { ...defaultOptions, ...options });
+        }
+
+        // Chart.js instance management
+        let chartInstances = {};
+
+        // Function to safely destroy existing chart
+        function destroyChart(chartId) {
+            if (chartInstances[chartId]) {
+                try {
+                    chartInstances[chartId].destroy();
+                    console.log(`Chart ${chartId} destroyed successfully`);
+                } catch (error) {
+                    console.warn(`Error destroying chart ${chartId}:`, error);
+                }
+                delete chartInstances[chartId];
+            }
+        }
+
+        // Function to safely create chart
+        function createChart(canvasId, config) {
+            // Check if Chart.js is loaded
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js is not loaded');
+                return null;
+            }
+
+            // First destroy any existing chart on this canvas
+            destroyChart(canvasId);
+
+            try {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) {
+                    console.error(`Canvas with ID ${canvasId} not found`);
+                    return null;
+                }
+
+                // Clear the canvas context
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Create new chart instance
+                const chart = new Chart(ctx, config);
+                chartInstances[canvasId] = chart;
+                console.log(`Chart ${canvasId} created successfully`);
+                return chart;
+            } catch (error) {
+                console.error(`Error creating chart ${canvasId}:`, error);
+                return null;
+            }
+        }
+
+        // Function to destroy all charts
+        function destroyAllCharts() {
+            Object.keys(chartInstances).forEach(chartId => {
+                destroyChart(chartId);
+            });
+            console.log('All charts destroyed');
+        }
+
+        // Cleanup when page is unloaded or hidden
+        function setupChartCleanup() {
+            // Handle page unload
+            window.addEventListener('beforeunload', destroyAllCharts);
+
+            // Handle page visibility change (when switching between tools)
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    // Page is hidden, destroy charts to prevent conflicts
+                    destroyAllCharts();
+                }
+            });
+
+            // Handle iframe-specific cleanup
+            if (isInIframe) {
+                // Listen for messages from parent frame
+                window.addEventListener('message', function(event) {
+                    if (event.data === 'cleanup-charts') {
+                        destroyAllCharts();
+                    }
+                });
+            }
+        }
+
+        // Utility functions
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+
+        // Navigation
+        function showSection(section) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.crm-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(section).classList.add('active');
+
+            // Update title
+            const titles = {
+                'dashboard': 'Dashboard CRM',
+                'customers': 'Gestão de Clientes',
+                'interactions': 'Histórico de Interações',
+                'analytics': 'Análises Avançadas',
+                'email-assistant': 'Assistente de Email'
+            };
+            document.getElementById('sectionTitle').textContent = titles[section];
+
+            // Load data if needed
+            if (section === 'dashboard') {
+                loadDashboard();
+            } else if (section === 'customers') {
+                loadCustomers();
+            } else if (section === 'interactions') {
+                loadInteractions();
+            } else if (section === 'analytics') {
+                loadAnalytics();
+            }
+        }
+
+        // Dashboard functions
+        async function loadDashboard() {
+            try {
+                // Destroy existing charts before loading new data
+                destroyAllCharts();
+
+                const response = await makeApiCall('/api/customers/analytics');
+                const data = await response.json();
+
+                if (data.success) {
+                    displayDashboardStats(data.stats);
+                    createInteractionsChart(data.recent_interactions);
+                    createSentimentChart(data.recent_interactions);
+                }
+            } catch (error) {
+                showNotification('Erro ao carregar dashboard: ' + error.message, 'error');
+            }
+        }
+
+        function displayDashboardStats(stats) {
+            const container = document.getElementById('dashboardStats');
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.total_customers}</div>
+                    <div class="stat-label">Total de Clientes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.avg_interactions}</div>
+                    <div class="stat-label">Interações Médias</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.avg_response_time}h</div>
+                    <div class="stat-label">Tempo Resposta Médio</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.avg_satisfaction}</div>
+                    <div class="stat-label">Satisfação Média</div>
+                </div>
+            `;
+        }
+
+        function createInteractionsChart(interactions) {
+            // Group interactions by date
+            const groupedData = {};
+            interactions.forEach(interaction => {
+                const date = new Date(interaction.timestamp).toLocaleDateString('pt-BR');
+                groupedData[date] = (groupedData[date] || 0) + 1;
+            });
+
+            createChart('interactionsChart', {
+                type: 'line',
+                data: {
+                    labels: Object.keys(groupedData),
+                    datasets: [{
+                        label: 'Interações',
+                        data: Object.values(groupedData),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSentimentChart(interactions) {
+            // Count sentiments
+            const sentiments = { positive: 0, neutral: 0, negative: 0 };
+            interactions.forEach(interaction => {
+                if (interaction.sentiment > 0.1) sentiments.positive++;
+                else if (interaction.sentiment < -0.1) sentiments.negative++;
+                else sentiments.neutral++;
+            });
+
+            createChart('sentimentChart', {
+                type: 'doughnut',
+                data: {
+                    labels: ['Positivo', 'Neutro', 'Negativo'],
+                    datasets: [{
+                        data: [sentiments.positive, sentiments.neutral, sentiments.negative],
+                        backgroundColor: ['#4caf50', '#ffc107', '#f44336']
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        // Customer functions
+        async function loadCustomers() {
+            const loading = document.getElementById('customersLoading');
+            const container = document.getElementById('customersList');
+            
+            loading.classList.add('show');
+
+            try {
+                const response = await makeApiCall('/api/customers');
+                const data = await response.json();
+
+                if (data.success) {
+                    container.innerHTML = '';
+                    
+                    data.customers.forEach(customer => {
+                        const customerDiv = document.createElement('div');
+                        customerDiv.className = 'customer-card';
+                        customerDiv.onclick = () => showCustomerDetails(customer.id);
+                        
+                        customerDiv.innerHTML = `
+                            <div class="customer-header">
+                                <div>
+                                    <div class="customer-name">${customer.name || 'Nome não informado'}</div>
+                                    <div class="customer-email">${customer.email}</div>
+                                    ${customer.company ? `<div style="color: #666; font-size: 12px;">${customer.company}</div>` : ''}
+                                </div>
+                                <div class="communication-style style-${customer.communication_style}">
+                                    ${customer.communication_style}
+                                </div>
+                            </div>
+                            
+                            <div class="customer-stats">
+                                <div class="customer-stat">
+                                    <div class="customer-stat-value">${customer.interaction_count}</div>
+                                    <div class="customer-stat-label">Interações</div>
+                                </div>
+                                <div class="customer-stat">
+                                    <div class="customer-stat-value">${customer.satisfaction_score || 'N/A'}</div>
+                                    <div class="customer-stat-label">Satisfação</div>
+                                </div>
+                                <div class="customer-stat">
+                                    <div class="customer-stat-value">${customer.topics_of_interest.length}</div>
+                                    <div class="customer-stat-label">Tópicos</div>
+                                </div>
+                            </div>
+                            
+                            ${customer.topics_of_interest.length > 0 ? `
+                                <div class="topics-list">
+                                    ${customer.topics_of_interest.slice(0, 3).map(topic => `<span class="topic-tag">${topic}</span>`).join('')}
+                                    ${customer.topics_of_interest.length > 3 ? `<span class="topic-tag">+${customer.topics_of_interest.length - 3}</span>` : ''}
+                                </div>
+                            ` : ''}
+                        `;
+                        
+                        container.appendChild(customerDiv);
+                    });
+                }
+            } catch (error) {
+                showNotification('Erro ao carregar clientes: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        async function showCustomerDetails(customerId) {
+            try {
+                const response = await fetch(`/api/customers/${customerId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const customer = data.customer;
+                    const modal = document.getElementById('customerModal');
+                    const details = document.getElementById('customerDetails');
+                    
+                    details.innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div>
+                                <h3>${customer.name || 'Nome não informado'}</h3>
+                                <p><strong>Email:</strong> ${customer.email}</p>
+                                ${customer.company ? `<p><strong>Empresa:</strong> ${customer.company}</p>` : ''}
+                                <p><strong>Estilo de Comunicação:</strong> <span class="communication-style style-${customer.communication_style}">${customer.communication_style}</span></p>
+                            </div>
+                            <div>
+                                <p><strong>Interações:</strong> ${customer.interaction_count}</p>
+                                <p><strong>Tempo Médio de Resposta:</strong> ${customer.response_time_avg || 'N/A'}h</p>
+                                <p><strong>Satisfação:</strong> ${customer.satisfaction_score || 'N/A'}</p>
+                                <p><strong>Última Interação:</strong> ${customer.last_interaction ? new Date(customer.last_interaction).toLocaleString('pt-BR') : 'N/A'}</p>
+                            </div>
+                        </div>
+                        
+                        ${customer.topics_of_interest.length > 0 ? `
+                            <div style="margin-bottom: 20px;">
+                                <h4>Tópicos de Interesse:</h4>
+                                <div class="topics-list">
+                                    ${customer.topics_of_interest.map(topic => `<span class="topic-tag">${topic}</span>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div>
+                            <h4>Histórico de Interações:</h4>
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                ${customer.interactions.map(interaction => `
+                                    <div class="interaction-item">
+                                        <div class="interaction-header">
+                                            <span class="interaction-type">
+                                                <span class="sentiment-indicator sentiment-${interaction.sentiment_score > 0.1 ? 'positive' : interaction.sentiment_score < -0.1 ? 'negative' : 'neutral'}"></span>
+                                                ${interaction.type}
+                                            </span>
+                                            <span class="interaction-time">${new Date(interaction.timestamp).toLocaleString('pt-BR')}</span>
+                                        </div>
+                                        <div>${interaction.content}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                    
+                    modal.classList.add('show');
+                }
+            } catch (error) {
+                showNotification('Erro ao carregar detalhes do cliente: ' + error.message, 'error');
+            }
+        }
+
+        function closeCustomerModal() {
+            document.getElementById('customerModal').classList.remove('show');
+        }
+
+        // Email Assistant functions
+        async function generateReplySuggestions() {
+            const emailId = document.getElementById('emailIdInput').value.trim();
+            
+            if (!emailId) {
+                showNotification('Digite o ID do email', 'error');
+                return;
+            }
+
+            const loading = document.getElementById('suggestionsLoading');
+            const container = document.getElementById('replySuggestions');
+            
+            loading.classList.add('show');
+
+            try {
+                const response = await fetch(`/api/email/${emailId}/reply-suggestions`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    container.innerHTML = `
+                        <div class="reply-suggestions">
+                            <h3>Sugestões de Resposta Geradas por IA</h3>
+                            ${data.suggestions.map(suggestion => `
+                                <div class="suggestion-item" onclick="useSuggestion('${suggestion.subject}', '${suggestion.body}')">
+                                    <div class="suggestion-tone">${suggestion.tone}</div>
+                                    <div class="suggestion-subject">${suggestion.subject}</div>
+                                    <div class="suggestion-body">${suggestion.body}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    showNotification('Erro ao gerar sugestões: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Erro de conexão: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        function useSuggestion(subject, body) {
+            // Copy to clipboard or redirect to email compose
+            navigator.clipboard.writeText(`Assunto: ${subject}\n\n${body}`).then(() => {
+                showNotification('Sugestão copiada para a área de transferência!', 'success');
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup chart cleanup handlers
+            setupChartCleanup();
+
+            // Load dashboard
+            loadDashboard();
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('customerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCustomerModal();
+            }
+        });
+    </script>
+</body>
+</html>

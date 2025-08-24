@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Assistant - Grupo Alves</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .sql-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            height: 90vh;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-header {
+            background: white;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(90vh - 80px);
+        }
+
+        .sql-section {
+            display: none;
+        }
+
+        .sql-section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .connection-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.3s;
+        }
+
+        .connection-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .connection-card.active {
+            border-color: #667eea;
+            background: #f0f8ff;
+        }
+
+        .connection-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .connection-status.success {
+            background: #4caf50;
+        }
+
+        .connection-status.failed {
+            background: #f44336;
+        }
+
+        .connection-status.untested {
+            background: #ffc107;
+        }
+
+        .sql-editor {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .query-result {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .result-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .result-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+
+        .notification.error {
+            background: #f44336;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .schema-tree {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .table-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .table-item:hover {
+            background: #f5f5f5;
+        }
+
+        .table-name {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 5px;
+        }
+
+        .column-list {
+            font-size: 12px;
+            color: #666;
+            margin-left: 15px;
+        }
+
+        .query-suggestions {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .suggestion-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .suggestion-item:hover {
+            background: #f0f0f0;
+        }
+
+        .connection-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .execution-stats {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="sql-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🗄️ SQL Assistant</h2>
+                <p>AI-Powered Database Queries</p>
+            </div>
+            <div class="sidebar-nav">
+                <div class="nav-item active" onclick="showSection('connections')">
+                    🔌 Conexões
+                </div>
+                <div class="nav-item" onclick="showSection('query-builder')">
+                    🤖 Gerador de SQL
+                </div>
+                <div class="nav-item" onclick="showSection('schema')">
+                    📋 Schema
+                </div>
+                <div class="nav-item" onclick="showSection('history')">
+                    📚 Histórico
+                </div>
+                
+                <div style="margin-top: 20px; padding: 0 20px;">
+                    <h4 style="color: #666; margin-bottom: 10px;">Conexões Ativas:</h4>
+                    <div id="activeConnections"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+
+            <div class="content-body">
+                <!-- Database Connections Section -->
+                <div id="connections" class="sql-section active">
+                    <div class="connection-form">
+                        <h3>Nova Conexão de Banco de Dados</h3>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Nome da Conexão:</label>
+                            <input type="text" class="form-input" id="connectionName" placeholder="Ex: Banco Principal">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Tipo de Banco:</label>
+                                <select class="form-select" id="dbType" onchange="updateConnectionForm()">
+                                    <option value="postgresql">PostgreSQL</option>
+                                    <option value="mysql">MySQL</option>
+                                    <option value="sqlite">SQLite</option>
+                                    <option value="mongodb">MongoDB</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Host:</label>
+                                <input type="text" class="form-input" id="dbHost" placeholder="localhost">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Porta:</label>
+                                <input type="number" class="form-input" id="dbPort" placeholder="5432">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nome do Banco:</label>
+                                <input type="text" class="form-input" id="dbName" placeholder="database_name">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Usuário:</label>
+                                <input type="text" class="form-input" id="dbUsername" placeholder="username">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Senha:</label>
+                                <input type="password" class="form-input" id="dbPassword" placeholder="password">
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 20px;">
+                            <button class="btn btn-primary" onclick="createConnection()">🔌 Criar Conexão</button>
+                            <button class="btn btn-secondary" onclick="testConnection()">🧪 Testar</button>
+                        </div>
+                    </div>
+
+                    <div class="loading" id="connectionsLoading">Carregando conexões...</div>
+                    <div id="connectionsList"></div>
+                </div>
+
+                <!-- Query Builder Section -->
+                <div id="query-builder" class="sql-section">
+                    <div class="query-suggestions">
+                        <h3>💡 Exemplos de Consultas em Linguagem Natural</h3>
+                        <p>Clique em qualquer exemplo para usar:</p>
+                        
+                        <div class="suggestion-item" onclick="useNaturalQuery(this)">
+                            Mostre todos os usuários cadastrados nos últimos 30 dias
+                        </div>
+                        <div class="suggestion-item" onclick="useNaturalQuery(this)">
+                            Qual é o total de vendas por mês neste ano?
+                        </div>
+                        <div class="suggestion-item" onclick="useNaturalQuery(this)">
+                            Liste os 10 produtos mais vendidos
+                        </div>
+                        <div class="suggestion-item" onclick="useNaturalQuery(this)">
+                            Quantos clientes fizeram pedidos esta semana?
+                        </div>
+                    </div>
+
+                    <div class="sql-editor">
+                        <div class="form-group">
+                            <label class="form-label">Conexão:</label>
+                            <select class="form-select" id="selectedConnection">
+                                <option value="">Selecione uma conexão</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Descreva o que você quer consultar:</label>
+                            <textarea class="form-textarea" id="naturalQuery" placeholder="Ex: Mostre todos os clientes que fizeram pedidos nos últimos 7 dias"></textarea>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <button class="btn btn-primary" onclick="generateSQL()">🤖 Gerar SQL</button>
+                            <button class="btn btn-secondary" onclick="clearQuery()">🗑️ Limpar</button>
+                        </div>
+
+                        <div class="form-group" id="generatedSQLGroup" style="display: none;">
+                            <label class="form-label">SQL Gerado:</label>
+                            <textarea class="form-textarea" id="generatedSQL" rows="8"></textarea>
+                            <div style="margin-top: 10px;">
+                                <button class="btn btn-success" onclick="executeSQL()">▶️ Executar</button>
+                                <button class="btn btn-secondary" onclick="explainSQL()">❓ Explicar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="loading" id="queryLoading">Gerando consulta SQL...</div>
+                    <div id="queryResults"></div>
+                </div>
+
+                <!-- Schema Section -->
+                <div id="schema" class="sql-section">
+                    <div class="form-group">
+                        <label class="form-label">Conexão:</label>
+                        <select class="form-select" id="schemaConnection" onchange="loadSchema()">
+                            <option value="">Selecione uma conexão</option>
+                        </select>
+                    </div>
+
+                    <div class="loading" id="schemaLoading">Carregando schema...</div>
+                    <div id="schemaResults"></div>
+                </div>
+
+                <!-- History Section -->
+                <div id="history" class="sql-section">
+                    <div class="loading" id="historyLoading">Carregando histórico...</div>
+                    <div id="historyResults"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Check if running in iframe and fix compatibility
+        const isInIframe = window !== window.top;
+
+        // Initialize Socket.IO with iframe compatibility
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            upgrade: true,
+            rememberUpgrade: true
+        });
+
+        let currentSessionId = localStorage.getItem('sql_session_id') || generateUUID();
+        localStorage.setItem('sql_session_id', currentSessionId);
+        let currentQueryId = null;
+
+        // Fix for iframe API calls
+        function makeApiCall(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            };
+
+            return fetch(url, { ...defaultOptions, ...options });
+        }
+
+        // Socket event listeners
+        socket.on('sql_executed', function(data) {
+            showNotification(`Query executada: ${data.row_count} resultados em ${data.execution_time}ms`, 'success');
+        });
+
+        // Utility functions
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+
+        // Navigation
+        function showSection(section) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.sql-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(section).classList.add('active');
+
+            // Update title
+            const titles = {
+                'connections': 'Gerenciar Conexões',
+                'query-builder': 'Gerador de SQL com IA',
+                'schema': 'Schema do Banco',
+                'history': 'Histórico de Consultas'
+            };
+            document.getElementById('sectionTitle').textContent = titles[section];
+
+            // Load data if needed
+            if (section === 'connections') {
+                loadConnections();
+            } else if (section === 'query-builder') {
+                loadConnectionsForSelect();
+            } else if (section === 'schema') {
+                loadConnectionsForSchema();
+            } else if (section === 'history') {
+                loadQueryHistory();
+            }
+        }
+
+        // Database connection management
+        function updateConnectionForm() {
+            const dbType = document.getElementById('dbType').value;
+            const portInput = document.getElementById('dbPort');
+            
+            const defaultPorts = {
+                'postgresql': 5432,
+                'mysql': 3306,
+                'sqlite': '',
+                'mongodb': 27017
+            };
+            
+            portInput.value = defaultPorts[dbType];
+            
+            // Hide/show fields based on database type
+            const hostGroup = document.getElementById('dbHost').parentElement.parentElement;
+            if (dbType === 'sqlite') {
+                hostGroup.style.display = 'none';
+            } else {
+                hostGroup.style.display = 'grid';
+            }
+        }
+
+        async function createConnection() {
+            const data = {
+                name: document.getElementById('connectionName').value,
+                db_type: document.getElementById('dbType').value,
+                host: document.getElementById('dbHost').value,
+                port: parseInt(document.getElementById('dbPort').value),
+                database_name: document.getElementById('dbName').value,
+                username: document.getElementById('dbUsername').value,
+                password: document.getElementById('dbPassword').value
+            };
+
+            if (!data.name || !data.database_name) {
+                showNotification('Nome e banco de dados são obrigatórios', 'error');
+                return;
+            }
+
+            try {
+                const response = await makeApiCall('/api/db-connections', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Conexão criada com sucesso!', 'success');
+                    clearConnectionForm();
+                    loadConnections();
+                } else {
+                    showNotification('Erro ao criar conexão: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Erro de conexão: ' + error.message, 'error');
+            }
+        }
+
+        function clearConnectionForm() {
+            document.getElementById('connectionName').value = '';
+            document.getElementById('dbHost').value = '';
+            document.getElementById('dbPort').value = '';
+            document.getElementById('dbName').value = '';
+            document.getElementById('dbUsername').value = '';
+            document.getElementById('dbPassword').value = '';
+        }
+
+        async function loadConnections() {
+            const loading = document.getElementById('connectionsLoading');
+            const container = document.getElementById('connectionsList');
+            
+            loading.classList.add('show');
+
+            try {
+                const response = await makeApiCall('/api/db-connections');
+                const data = await response.json();
+
+                if (data.success) {
+                    container.innerHTML = '';
+                    
+                    data.connections.forEach(conn => {
+                        const connDiv = document.createElement('div');
+                        connDiv.className = 'connection-card';
+                        connDiv.innerHTML = `
+                            <div style="display: flex; justify-content: between; align-items: center;">
+                                <div>
+                                    <span class="connection-status ${conn.test_status}"></span>
+                                    <strong>${conn.name}</strong>
+                                    <span style="color: #666; margin-left: 10px;">(${conn.db_type})</span>
+                                </div>
+                                <div>
+                                    <button class="btn btn-secondary" onclick="testConnectionById('${conn.id}')">🧪 Testar</button>
+                                    <button class="btn btn-danger" onclick="deleteConnection('${conn.id}')">🗑️</button>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                                ${conn.host}:${conn.port}/${conn.database_name}
+                                ${conn.last_tested ? `• Testado: ${new Date(conn.last_tested).toLocaleString('pt-BR')}` : ''}
+                            </div>
+                        `;
+                        container.appendChild(connDiv);
+                    });
+
+                    // Update active connections in sidebar
+                    updateActiveConnections(data.connections);
+                }
+            } catch (error) {
+                showNotification('Erro ao carregar conexões: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        function updateActiveConnections(connections) {
+            const container = document.getElementById('activeConnections');
+            container.innerHTML = '';
+            
+            connections.filter(conn => conn.is_active && conn.test_status === 'success').forEach(conn => {
+                const connDiv = document.createElement('div');
+                connDiv.style.cssText = 'padding: 8px; background: white; border-radius: 5px; margin-bottom: 5px; font-size: 12px; cursor: pointer;';
+                connDiv.innerHTML = `
+                    <span class="connection-status success"></span>
+                    ${conn.name}
+                `;
+                connDiv.onclick = () => selectConnection(conn.id);
+                container.appendChild(connDiv);
+            });
+        }
+
+        async function testConnectionById(connectionId) {
+            try {
+                const response = await fetch(`/api/db-connections/${connectionId}/test`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Conexão testada com sucesso!', 'success');
+                    loadConnections();
+                } else {
+                    showNotification('Erro no teste: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Erro ao testar conexão: ' + error.message, 'error');
+            }
+        }
+
+        // SQL Query Generation
+        async function loadConnectionsForSelect() {
+            try {
+                const response = await fetch('/api/db-connections');
+                const data = await response.json();
+
+                if (data.success) {
+                    const select = document.getElementById('selectedConnection');
+                    select.innerHTML = '<option value="">Selecione uma conexão</option>';
+                    
+                    data.connections.filter(conn => conn.test_status === 'success').forEach(conn => {
+                        const option = document.createElement('option');
+                        option.value = conn.id;
+                        option.textContent = `${conn.name} (${conn.db_type})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                showNotification('Erro ao carregar conexões: ' + error.message, 'error');
+            }
+        }
+
+        function useNaturalQuery(element) {
+            const query = element.textContent.trim();
+            document.getElementById('naturalQuery').value = query;
+            showNotification('Exemplo carregado! Clique em "Gerar SQL"', 'success');
+        }
+
+        async function generateSQL() {
+            const naturalQuery = document.getElementById('naturalQuery').value.trim();
+            const connectionId = document.getElementById('selectedConnection').value;
+
+            if (!naturalQuery || !connectionId) {
+                showNotification('Selecione uma conexão e descreva a consulta', 'error');
+                return;
+            }
+
+            const loading = document.getElementById('queryLoading');
+            loading.classList.add('show');
+
+            try {
+                const response = await makeApiCall('/api/sql/generate', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        query: naturalQuery,
+                        connection_id: connectionId,
+                        session_id: currentSessionId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('generatedSQL').value = data.sql_query;
+                    document.getElementById('generatedSQLGroup').style.display = 'block';
+                    currentQueryId = data.query_id;
+                    showNotification('SQL gerado com sucesso!', 'success');
+                } else {
+                    showNotification('Erro ao gerar SQL: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Erro de conexão: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        async function executeSQL() {
+            if (!currentQueryId) {
+                showNotification('Gere uma consulta SQL primeiro', 'error');
+                return;
+            }
+
+            const connectionId = document.getElementById('selectedConnection').value;
+            const loading = document.getElementById('queryLoading');
+            loading.classList.add('show');
+
+            try {
+                const response = await fetch('/api/sql/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query_id: currentQueryId,
+                        connection_id: connectionId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayQueryResults(data);
+                    showNotification(`Consulta executada: ${data.row_count} resultados`, 'success');
+                } else {
+                    showNotification('Erro na execução: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Erro de conexão: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        function displayQueryResults(data) {
+            const container = document.getElementById('queryResults');
+            
+            let html = `
+                <div class="query-result">
+                    <div class="execution-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${data.row_count}</div>
+                            <div class="stat-label">Registros</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${Math.round(data.execution_time)}ms</div>
+                            <div class="stat-label">Tempo</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${data.data.length > 0 ? Object.keys(data.data[0]).length : 0}</div>
+                            <div class="stat-label">Colunas</div>
+                        </div>
+                    </div>
+            `;
+
+            if (data.data.length > 0) {
+                html += '<table class="result-table">';
+                
+                // Headers
+                const firstRow = data.data[0];
+                html += '<thead><tr>';
+                Object.keys(firstRow).forEach(key => {
+                    html += `<th>${key}</th>`;
+                });
+                html += '</tr></thead>';
+                
+                // Rows
+                html += '<tbody>';
+                data.data.forEach(row => {
+                    html += '<tr>';
+                    Object.values(row).forEach(value => {
+                        html += `<td>${value !== null ? value : 'NULL'}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody>';
+                
+                html += '</table>';
+            } else {
+                html += '<p style="text-align: center; color: #666; padding: 40px;">Nenhum resultado encontrado</p>';
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function clearQuery() {
+            document.getElementById('naturalQuery').value = '';
+            document.getElementById('generatedSQL').value = '';
+            document.getElementById('generatedSQLGroup').style.display = 'none';
+            document.getElementById('queryResults').innerHTML = '';
+            currentQueryId = null;
+        }
+
+        // Schema management
+        async function loadConnectionsForSchema() {
+            try {
+                const response = await fetch('/api/db-connections');
+                const data = await response.json();
+
+                if (data.success) {
+                    const select = document.getElementById('schemaConnection');
+                    select.innerHTML = '<option value="">Selecione uma conexão</option>';
+                    
+                    data.connections.filter(conn => conn.test_status === 'success').forEach(conn => {
+                        const option = document.createElement('option');
+                        option.value = conn.id;
+                        option.textContent = `${conn.name} (${conn.db_type})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                showNotification('Erro ao carregar conexões: ' + error.message, 'error');
+            }
+        }
+
+        async function loadSchema() {
+            const connectionId = document.getElementById('schemaConnection').value;
+            
+            if (!connectionId) {
+                document.getElementById('schemaResults').innerHTML = '';
+                return;
+            }
+
+            const loading = document.getElementById('schemaLoading');
+            const results = document.getElementById('schemaResults');
+            
+            loading.classList.add('show');
+
+            try {
+                const response = await fetch(`/api/db-connections/${connectionId}/schema`);
+                const data = await response.json();
+
+                if (data.success) {
+                    results.innerHTML = '';
+                    
+                    data.tables.forEach(table => {
+                        const tableDiv = document.createElement('div');
+                        tableDiv.className = 'schema-tree';
+                        tableDiv.innerHTML = `
+                            <div class="table-name">📋 ${table.name}</div>
+                            <div class="column-list">
+                                ${table.columns.map(col => `• ${col.name} (${col.type})`).join('<br>')}
+                            </div>
+                        `;
+                        results.appendChild(tableDiv);
+                    });
+                } else {
+                    showNotification('Erro ao carregar schema: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Erro de conexão: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConnections();
+            updateConnectionForm();
+        });
+    </script>
+</body>
+</html>

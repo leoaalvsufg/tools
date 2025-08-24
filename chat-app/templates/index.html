@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistente AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            width: 100%;
+            height: 100vh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 60px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+            text-decoration: none;
+        }
+
+        .header-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .nav-dropdown-content {
+            display: none;
+            position: absolute;
+            background: white;
+            min-width: 220px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            z-index: 1000;
+            top: 100%;
+            right: 0;
+            margin-top: 5px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-content {
+            display: block;
+        }
+
+        .nav-dropdown-item {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background 0.3s;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .nav-dropdown-item:hover {
+            background: #f5f5f5;
+        }
+
+        .nav-dropdown-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .nav-dropdown-item:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .conversation-info {
+            color: white;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4444;
+        }
+
+        .status-indicator.online {
+            background: #44ff44;
+        }
+
+        .provider-info {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px 30px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            max-height: calc(100vh - 140px);
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            border: 1px solid #e0e0e0;
+            color: #333;
+        }
+
+        .chat-input-container {
+            padding: 15px 30px 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 12px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            outline: none;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            resize: none;
+            min-height: 50px;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            min-height: 50px;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+            color: #666;
+        }
+
+        .error-message {
+            background: #ff4444;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .chat-messages {
+                padding: 15px 20px;
+            }
+            
+            .chat-input-container {
+                padding: 12px 20px 15px;
+            }
+            
+            .message-content {
+                max-width: 90%;
+                padding: 12px 16px;
+            }
+            
+            .header-title {
+                font-size: 18px;
+            }
+            
+            .header-button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* Melhorias visuais */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="header-left">
+                <div class="conversation-info" id="conversationInfo">
+                    Nova conversa
+                </div>
+                <div>
+                    <p id="providerInfo" class="provider-info">Carregando...</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <button class="header-button" onclick="clearConversation()" title="Limpar conversa">🗑️</button>
+                <div class="status-indicator" id="statusIndicator"></div>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-content">
+                    Olá! Eu sou seu assistente AI. Como posso ajudá-lo hoje?
+                </div>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            Processando sua mensagem...
+        </div>
+        
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="messageInput" placeholder="Digite sua mensagem..." maxlength="1000">
+            <button class="send-button" id="sendButton" onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const loading = document.getElementById('loading');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const conversationInfo = document.getElementById('conversationInfo');
+
+        let currentSessionId = null;
+        let conversationLength = 0;
+
+        // Verificar status da aplicação
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+
+                // Atualizar status visual
+                if (data.provider_status === 'online') {
+                    statusIndicator.classList.add('online');
+                } else {
+                    statusIndicator.classList.remove('online');
+                }
+
+                // Atualizar informações do provedor
+                const providerInfo = document.getElementById('providerInfo');
+                const providerName = data.current_provider === 'openrouter' ? 'OpenRouter' : 'Ollama';
+                const modelName = data.current_provider === 'openrouter' ?
+                    data.config.openrouter_model : data.config.ollama_model;
+
+                providerInfo.innerHTML = `
+                    Usando ${providerName}<br>
+                    <span class="provider-info">Modelo: ${modelName}</span>
+                `;
+
+            } catch (error) {
+                statusIndicator.classList.remove('online');
+                document.getElementById('providerInfo').textContent = 'Erro de conexão';
+            }
+        }
+
+        // Adicionar mensagem ao chat
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            
+            // Scroll para baixo
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Mostrar erro
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            chatMessages.appendChild(errorDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Enviar mensagem
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Adicionar mensagem do usuário
+            addMessage(message, true);
+            messageInput.value = '';
+            
+            // Desabilitar input e botão
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addMessage(data.message);
+                } else {
+                    showError(data.error || 'Erro desconhecido');
+                }
+            } catch (error) {
+                showError('Erro de conexão: ' + error.message);
+            } finally {
+                // Reabilitar input e botão
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+                loading.style.display = 'none';
+                messageInput.focus();
+            }
+        }
+
+        // Event listeners
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Clear conversation
+        async function clearConversation() {
+            if (confirm('Tem certeza que deseja limpar a conversa?')) {
+                try {
+                    const response = await fetch('/api/conversation/clear', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session_id: currentSessionId })
+                    });
+
+                    if (response.ok) {
+                        chatMessages.innerHTML = `
+                            <div class="message bot">
+                                <div class="message-content">
+                                    Olá! Eu sou seu assistente AI. Como posso ajudá-lo hoje?
+                                </div>
+                            </div>
+                        `;
+                        conversationLength = 0;
+                        updateConversationInfo();
+                    }
+                } catch (error) {
+                    showError('Erro ao limpar conversa: ' + error.message);
+                }
+            }
+        }
+
+        // Load conversation history
+        async function loadConversationHistory() {
+            try {
+                // Get session ID from localStorage or create new one
+                if (!currentSessionId) {
+                    currentSessionId = localStorage.getItem('chat_session_id');
+                    if (!currentSessionId) {
+                        currentSessionId = generateUUID();
+                        localStorage.setItem('chat_session_id', currentSessionId);
+                    }
+                }
+
+                const response = await fetch('/api/conversation/history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: currentSessionId })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    currentSessionId = data.session_id;
+                    conversationLength = data.history.length;
+
+                    // Clear current messages
+                    chatMessages.innerHTML = '';
+
+                    // Add welcome message if no history
+                    if (data.history.length === 0) {
+                        addMessage('Olá! Eu sou seu assistente AI. Como posso ajudá-lo hoje?', false);
+                    } else {
+                        // Load history messages
+                        data.history.forEach(msg => {
+                            addMessage(msg.content, msg.role === 'user');
+                        });
+                    }
+
+                    updateConversationInfo();
+                }
+            } catch (error) {
+                showError('Erro ao carregar histórico: ' + error.message);
+            }
+        }
+
+        // Generate UUID for session
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Update conversation info display
+        function updateConversationInfo() {
+            if (conversationLength === 0) {
+                conversationInfo.textContent = 'Nova conversa';
+            } else {
+                conversationInfo.textContent = `${conversationLength} mensagens`;
+            }
+        }
+
+        // Update send message function to handle session info
+        sendMessage = async function() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Adicionar mensagem do usuário
+            addMessage(message, true);
+            messageInput.value = '';
+
+            // Desabilitar input e botão
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: currentSessionId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addMessage(data.message);
+                    currentSessionId = data.session_id;
+                    conversationLength = data.conversation_length;
+                    updateConversationInfo();
+
+                    // Save session ID to localStorage
+                    localStorage.setItem('chat_session_id', currentSessionId);
+                } else {
+                    showError(data.error || 'Erro desconhecido');
+                }
+            } catch (error) {
+                showError('Erro de conexão: ' + error.message);
+            } finally {
+                // Reabilitar input e botão
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+                loading.style.display = 'none';
+                messageInput.focus();
+            }
+        };
+
+        // Show help modal
+        function showHelp() {
+            const helpContent = `
+                <div style="max-width: 600px; padding: 20px;">
+                    <h2>🤖 Guia do Sistema de IA - Grupo Alves</h2>
+
+                    <h3>💬 Comandos Especiais no Chat:</h3>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <strong>🔍 Pesquisa Web:</strong><br>
+                        • <code>/search [sua pesquisa]</code> - Pesquisa web em tempo real<br>
+                        • Exemplo: <code>/search últimas notícias sobre IA</code><br><br>
+
+                        <strong>📄 Raspagem de Sites:</strong><br>
+                        • <code>/scrape [URL]</code> - Extrai conteúdo de sites<br>
+                        • Exemplo: <code>/scrape https://www.wikipedia.org/wiki/AI</code><br><br>
+
+                        <strong>🗄️ Bases de Dados:</strong><br>
+                        • <code>/db [SQL query]</code> - Consulta bases de dados<br>
+                        • <code>/schema [database]</code> - Mostra estrutura do banco<br>
+                        • Exemplo: <code>/db SELECT * FROM usuarios LIMIT 5</code>
+                    </div>
+
+                    <h3>🧠 Pesquisa Automática:</h3>
+                    <p>O chat detecta automaticamente quando você precisa de informações atuais:</p>
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        • "Qual é o preço atual do dólar?"<br>
+                        • "Quais são as últimas notícias sobre tecnologia?"<br>
+                        • "Como está o tempo hoje em São Paulo?"
+                    </div>
+
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="closeHelp()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Fechar</button>
+                    </div>
+                </div>
+            `;
+
+            // Create modal
+            const modal = document.createElement('div');
+            modal.id = 'helpModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                border-radius: 15px;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            `;
+            modalContent.innerHTML = helpContent;
+
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            // Close on background click
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeHelp();
+                }
+            });
+        }
+
+        function closeHelp() {
+            const modal = document.getElementById('helpModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Load conversation history on page load
+        loadConversationHistory();
+
+        // Verificar status inicial
+        checkStatus();
+
+        // Verificar status a cada 30 segundos
+        setInterval(checkStatus, 30000);
+
+        // Focar no input
+        messageInput.focus();
+    </script>
+</body>
+</html>

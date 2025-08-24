@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Grupo Alves</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            line-height: 1.6;
+        }
+
+        .api-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .api-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .api-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .api-subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .api-info {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .info-label {
+            font-size: 14px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .api-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+        }
+
+        .api-sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+
+        .endpoint-group {
+            margin-bottom: 20px;
+        }
+
+        .group-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .endpoint-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .endpoint-item:hover,
+        .endpoint-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .method-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-right: 8px;
+            min-width: 35px;
+            text-align: center;
+        }
+
+        .method-get { background: #28a745; color: white; }
+        .method-post { background: #007bff; color: white; }
+        .method-put { background: #ffc107; color: black; }
+        .method-delete { background: #dc3545; color: white; }
+
+        .api-main {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .endpoint-section {
+            display: none;
+        }
+
+        .endpoint-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+
+        .endpoint-method {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .endpoint-path {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .endpoint-description {
+            color: #6c757d;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 30px 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: #667eea;
+        }
+
+        .parameter-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .parameter-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .parameter-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .parameter-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .param-name {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .param-type {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .param-required {
+            background: #dc3545;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .param-optional {
+            background: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .response-example {
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 15px 0;
+        }
+
+        .response-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .status-200 { background: #d4edda; color: #155724; }
+        .status-400 { background: #f8d7da; color: #721c24; }
+        .status-500 { background: #f8d7da; color: #721c24; }
+
+        .try-it-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .try-it-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .auth-info {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #fdcb6e;
+        }
+
+        .auth-title {
+            font-weight: 600;
+            color: #2d3436;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .api-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .api-sidebar {
+                position: static;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="api-container">
+        <div class="api-header">
+            <h1 class="api-title">
+                <i class="fas fa-code"></i>
+                API Documentation
+            </h1>
+            <p class="api-subtitle">
+                Documentação completa da API REST do Sistema de IA - Grupo Alves
+            </p>
+        </div>
+
+        <div class="api-info">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Base URL</div>
+                    <div class="info-value">http://localhost:8000</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Versão</div>
+                    <div class="info-value">v1.0</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Formato</div>
+                    <div class="info-value">JSON</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Endpoints</div>
+                    <div class="info-value">25+</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-info">
+            <div class="auth-title">
+                <i class="fas fa-shield-alt"></i>
+                Autenticação
+            </div>
+            <p>A API utiliza autenticação por sessão. Algumas rotas podem requerer autenticação específica. Headers recomendados:</p>
+            <div class="code-block">
+Content-Type: application/json
+Accept: application/json</div>
+        </div>
+
+        <div class="api-content">
+            <div class="api-sidebar">
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="🔍 Buscar endpoint..." id="searchInput">
+                </div>
+
+                <h3 class="sidebar-title">Endpoints</h3>
+                
+                <div class="endpoint-group">
+                    <div class="group-title">Chat IA</div>
+                    <div class="endpoint-item active" onclick="showEndpoint('chat-send')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/chat</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('chat-history')">
+                        <span class="method-badge method-get">GET</span>
+                        <span>/api/conversations</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-group">
+                    <div class="group-title">Pesquisa Web</div>
+                    <div class="endpoint-item" onclick="showEndpoint('search-web')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/search</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('scrape-url')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/scrape</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('export-search')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/export/search</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-group">
+                    <div class="group-title">SQL Assistant</div>
+                    <div class="endpoint-item" onclick="showEndpoint('db-connections')">
+                        <span class="method-badge method-get">GET</span>
+                        <span>/api/db-connections</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('create-connection')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/db-connections</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('generate-sql')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/sql/generate</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('execute-sql')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/sql/execute</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-group">
+                    <div class="group-title">Email IA</div>
+                    <div class="endpoint-item" onclick="showEndpoint('compose-email')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/email/compose</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('reply-suggestions')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/email/{id}/reply-suggestions</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('analyze-email')">
+                        <span class="method-badge method-post">POST</span>
+                        <span>/api/email/{id}/analyze</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-group">
+                    <div class="group-title">CRM</div>
+                    <div class="endpoint-item" onclick="showEndpoint('list-customers')">
+                        <span class="method-badge method-get">GET</span>
+                        <span>/api/customers</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('customer-profile')">
+                        <span class="method-badge method-get">GET</span>
+                        <span>/api/customers/{id}</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('customer-analytics')">
+                        <span class="method-badge method-get">GET</span>
+                        <span>/api/customers/analytics</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-group">
+                    <div class="group-title">Sistema</div>
+                    <div class="endpoint-item" onclick="showEndpoint('system-status')">
+                        <span class="method-badge method-get">GET</span>
+                        <span>/api/status</span>
+                    </div>
+                    <div class="endpoint-item" onclick="showEndpoint('config')">
+                        <span class="method-badge method-get">GET</span>
+                        <span>/api/config</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="api-main">
+                <!-- Chat Send Endpoint -->
+                <div id="chat-send" class="endpoint-section active">
+                    <div class="endpoint-header">
+                        <span class="endpoint-method method-post">POST</span>
+                        <span class="endpoint-path">/api/chat</span>
+                    </div>
+                    
+                    <p class="endpoint-description">
+                        Envia uma mensagem para o chat IA. O sistema detecta automaticamente se precisa fazer pesquisa web e retorna uma resposta contextualizada.
+                    </p>
+
+                    <h3 class="section-title">
+                        <i class="fas fa-arrow-down"></i>
+                        Parâmetros de Entrada
+                    </h3>
+                    
+                    <table class="parameter-table">
+                        <thead>
+                            <tr>
+                                <th>Parâmetro</th>
+                                <th>Tipo</th>
+                                <th>Obrigatório</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="param-name">message</td>
+                                <td><span class="param-type">string</span></td>
+                                <td><span class="param-required">Sim</span></td>
+                                <td>Mensagem do usuário para o chat IA</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">session_id</td>
+                                <td><span class="param-type">string</span></td>
+                                <td><span class="param-optional">Não</span></td>
+                                <td>ID da sessão para manter contexto da conversa</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">provider</td>
+                                <td><span class="param-type">string</span></td>
+                                <td><span class="param-optional">Não</span></td>
+                                <td>Provedor de IA: "openrouter" ou "ollama"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="section-title">
+                        <i class="fas fa-code"></i>
+                        Exemplo de Requisição
+                    </h3>
+                    
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Qual é o preço atual do bitcoin?",
+    "session_id": "user-123",
+    "provider": "openrouter"
+  }'</div>
+
+                    <h3 class="section-title">
+                        <i class="fas fa-arrow-up"></i>
+                        Resposta
+                    </h3>
+
+                    <div class="response-example">
+                        <span class="response-status status-200">200 OK</span>
+                        <div class="code-block">
+                            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+{
+  "success": true,
+  "response": "O preço atual do Bitcoin é aproximadamente $43,250 USD...",
+  "search_performed": true,
+  "search_results": [
+    {
+      "title": "Bitcoin Price Today",
+      "url": "https://example.com",
+      "content": "Bitcoin trading at $43,250..."
+    }
+  ],
+  "session_id": "user-123",
+  "timestamp": "2024-01-15T10:30:00Z"
+}</div>
+                    </div>
+
+                    <button class="try-it-btn" onclick="tryEndpoint('chat-send')">
+                        <i class="fas fa-play"></i>
+                        Testar Endpoint
+                    </button>
+                </div>
+
+                <!-- More endpoints will be added here -->
+                <div id="search-web" class="endpoint-section">
+                    <div class="endpoint-header">
+                        <span class="endpoint-method method-post">POST</span>
+                        <span class="endpoint-path">/api/search</span>
+                    </div>
+                    
+                    <p class="endpoint-description">
+                        Realiza pesquisa web avançada com análise de conteúdo e filtragem de resultados relevantes.
+                    </p>
+
+                    <h3 class="section-title">
+                        <i class="fas fa-arrow-down"></i>
+                        Parâmetros de Entrada
+                    </h3>
+                    
+                    <table class="parameter-table">
+                        <thead>
+                            <tr>
+                                <th>Parâmetro</th>
+                                <th>Tipo</th>
+                                <th>Obrigatório</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="param-name">query</td>
+                                <td><span class="param-type">string</span></td>
+                                <td><span class="param-required">Sim</span></td>
+                                <td>Termo de pesquisa</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">max_results</td>
+                                <td><span class="param-type">integer</span></td>
+                                <td><span class="param-optional">Não</span></td>
+                                <td>Número máximo de resultados (padrão: 5)</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">include_images</td>
+                                <td><span class="param-type">boolean</span></td>
+                                <td><span class="param-optional">Não</span></td>
+                                <td>Incluir imagens nos resultados</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="section-title">
+                        <i class="fas fa-code"></i>
+                        Exemplo de Requisição
+                    </h3>
+                    
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+curl -X POST http://localhost:8000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "inteligência artificial 2024",
+    "max_results": 10,
+    "include_images": true
+  }'</div>
+
+                    <button class="try-it-btn" onclick="tryEndpoint('search-web')">
+                        <i class="fas fa-play"></i>
+                        Testar Endpoint
+                    </button>
+                </div>
+
+                <!-- SQL Generate Endpoint -->
+                <div id="generate-sql" class="endpoint-section">
+                    <div class="endpoint-header">
+                        <span class="endpoint-method method-post">POST</span>
+                        <span class="endpoint-path">/api/sql/generate</span>
+                    </div>
+                    
+                    <p class="endpoint-description">
+                        Converte linguagem natural em consultas SQL usando IA. Suporta múltiplos tipos de banco de dados.
+                    </p>
+
+                    <h3 class="section-title">
+                        <i class="fas fa-arrow-down"></i>
+                        Parâmetros de Entrada
+                    </h3>
+                    
+                    <table class="parameter-table">
+                        <thead>
+                            <tr>
+                                <th>Parâmetro</th>
+                                <th>Tipo</th>
+                                <th>Obrigatório</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="param-name">query</td>
+                                <td><span class="param-type">string</span></td>
+                                <td><span class="param-required">Sim</span></td>
+                                <td>Descrição em linguagem natural da consulta desejada</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">connection_id</td>
+                                <td><span class="param-type">string</span></td>
+                                <td><span class="param-required">Sim</span></td>
+                                <td>ID da conexão de banco de dados</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">session_id</td>
+                                <td><span class="param-type">string</span></td>
+                                <td><span class="param-optional">Não</span></td>
+                                <td>ID da sessão para histórico</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="section-title">
+                        <i class="fas fa-code"></i>
+                        Exemplo de Requisição
+                    </h3>
+                    
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+curl -X POST http://localhost:8000/api/sql/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Mostre todos os usuários ativos dos últimos 30 dias",
+    "connection_id": "conn-123",
+    "session_id": "sql-session-456"
+  }'</div>
+
+                    <h3 class="section-title">
+                        <i class="fas fa-arrow-up"></i>
+                        Resposta
+                    </h3>
+
+                    <div class="response-example">
+                        <span class="response-status status-200">200 OK</span>
+                        <div class="code-block">
+                            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+{
+  "success": true,
+  "sql_query": "SELECT * FROM users WHERE status = 'active' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)",
+  "query_id": "query-789",
+  "schema": [
+    {
+      "name": "users",
+      "columns": [
+        {"name": "id", "type": "int"},
+        {"name": "email", "type": "varchar"},
+        {"name": "status", "type": "varchar"},
+        {"name": "created_at", "type": "datetime"}
+      ]
+    }
+  ]
+}</div>
+                    </div>
+
+                    <button class="try-it-btn" onclick="tryEndpoint('generate-sql')">
+                        <i class="fas fa-play"></i>
+                        Testar Endpoint
+                    </button>
+                </div>
+
+                <!-- Add more endpoint sections here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Endpoint navigation
+        function showEndpoint(endpointId) {
+            // Update sidebar
+            document.querySelectorAll('.endpoint-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.endpoint-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            const targetSection = document.getElementById(endpointId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+        }
+
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.parentElement;
+            const code = codeBlock.textContent.replace('Copiar', '').trim();
+            
+            navigator.clipboard.writeText(code).then(() => {
+                button.textContent = 'Copiado!';
+                setTimeout(() => {
+                    button.textContent = 'Copiar';
+                }, 2000);
+            });
+        }
+
+        // Try endpoint functionality
+        function tryEndpoint(endpointId) {
+            // This would open a modal or redirect to a testing interface
+            alert(`Funcionalidade de teste para ${endpointId} será implementada em breve!`);
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const endpointItems = document.querySelectorAll('.endpoint-item');
+            
+            endpointItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm) || searchTerm === '') {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('API Documentation loaded');
+        });
+    </script>
+</body>
+</html>

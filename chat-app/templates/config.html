@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Chat LLM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .config-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .config-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .config-content {
+            padding: 30px;
+        }
+
+        .provider-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .provider-section.active {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .provider-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .provider-radio {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .provider-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4444;
+            margin-right: 10px;
+        }
+
+        .status-indicator.online {
+            background: #44ff44;
+        }
+
+        .status-indicator.testing {
+            background: #ffaa44;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            transition: background 0.3s;
+        }
+
+        .test-button:hover {
+            background: #5a6fd8;
+        }
+
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .model-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-container">
+        <div class="config-header">
+            <h1>Configurações do Chat LLM</h1>
+            <p>Configure seu provedor de IA preferido</p>
+        </div>
+        
+        <div class="config-content">
+            <div id="alert" class="alert"></div>
+            
+            <!-- OpenRouter Section -->
+            <div class="provider-section" id="openrouter-section">
+                <div class="provider-header">
+                    <input type="radio" name="provider" value="openrouter" class="provider-radio" id="openrouter-radio" checked>
+                    <label for="openrouter-radio" class="provider-title">OpenRouter</label>
+                    <div class="status-indicator" id="openrouter-status"></div>
+                    <span id="openrouter-status-text">Não testado</span>
+                    <button class="test-button" onclick="testProvider('openrouter')" id="test-openrouter">Testar</button>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">API Key:</label>
+                    <input type="password" class="form-input" id="openrouter_api_key" 
+                           value="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">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Modelo:</label>
+                    <select class="form-select" id="openrouter_model">
+                        <option value="">Carregando modelos...</option>
+                    </select>
+                    <button type="button" class="test-button" onclick="loadOpenRouterModels()" id="refresh-models">🔄 Atualizar</button>
+                    <div class="model-info" id="model-info">Carregando lista de modelos disponíveis...</div>
+                </div>
+            </div>
+
+            <!-- Ollama Section -->
+            <div class="provider-section" id="ollama-section">
+                <div class="provider-header">
+                    <input type="radio" name="provider" value="ollama" class="provider-radio" id="ollama-radio">
+                    <label for="ollama-radio" class="provider-title">Ollama (Local)</label>
+                    <div class="status-indicator" id="ollama-status"></div>
+                    <span id="ollama-status-text">Não testado</span>
+                    <button class="test-button" onclick="testProvider('ollama')" id="test-ollama">Testar</button>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Host:</label>
+                    <input type="text" class="form-input" id="ollama_host" value="host.docker.internal">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Porta:</label>
+                    <input type="number" class="form-input" id="ollama_port" value="11434">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Modelo:</label>
+                    <input type="text" class="form-input" id="ollama_model" value="llama3.2:1b">
+                    <div class="model-info">Certifique-se de que o modelo está instalado no Ollama</div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="saveConfig()">Salvar Configurações</button>
+                <a href="/" class="btn btn-secondary">Voltar ao Chat</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentConfig = {};
+
+        // Load OpenRouter models dynamically
+        async function loadOpenRouterModels() {
+            const modelSelect = document.getElementById('openrouter_model');
+            const modelInfo = document.getElementById('model-info');
+            const refreshButton = document.getElementById('refresh-models');
+
+            try {
+                refreshButton.disabled = true;
+                refreshButton.textContent = '🔄 Carregando...';
+                modelInfo.textContent = 'Carregando modelos...';
+
+                const response = await fetch('/api/openrouter/models');
+                const result = await response.json();
+
+                if (result.success) {
+                    // Clear existing options
+                    modelSelect.innerHTML = '';
+
+                    // Group models by free/paid
+                    const freeModels = result.models.filter(m => m.is_free);
+                    const paidModels = result.models.filter(m => !m.is_free);
+
+                    // Add free models first
+                    if (freeModels.length > 0) {
+                        const freeGroup = document.createElement('optgroup');
+                        freeGroup.label = '🆓 Modelos Gratuitos';
+                        freeModels.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.textContent = `${model.name} (${model.context_length || 'N/A'} tokens)`;
+                            option.title = model.description;
+                            freeGroup.appendChild(option);
+                        });
+                        modelSelect.appendChild(freeGroup);
+                    }
+
+                    // Add paid models
+                    if (paidModels.length > 0) {
+                        const paidGroup = document.createElement('optgroup');
+                        paidGroup.label = '💰 Modelos Pagos';
+                        paidModels.slice(0, 20).forEach(model => { // Limit to first 20 paid models
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.textContent = `${model.name} (${model.context_length || 'N/A'} tokens)`;
+                            option.title = model.description;
+                            paidGroup.appendChild(option);
+                        });
+                        modelSelect.appendChild(paidGroup);
+                    }
+
+                    modelInfo.textContent = `${result.models.length} modelos carregados (${freeModels.length} gratuitos, ${paidModels.length} pagos)`;
+
+                    // Set current model if it exists
+                    if (currentConfig.openrouter_model) {
+                        modelSelect.value = currentConfig.openrouter_model;
+                    }
+                } else {
+                    modelInfo.textContent = 'Erro ao carregar modelos: ' + result.error;
+                    // Fallback to basic options
+                    modelSelect.innerHTML = `
+                        <option value="google/gemma-2-9b-it:free">Gemma 2 9B (Gratuito)</option>
+                        <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (Gratuito)</option>
+                        <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini (Gratuito)</option>
+                    `;
+                }
+            } catch (error) {
+                modelInfo.textContent = 'Erro de conexão: ' + error.message;
+                showAlert('Erro ao carregar modelos: ' + error.message, 'error');
+            } finally {
+                refreshButton.disabled = false;
+                refreshButton.textContent = '🔄 Atualizar';
+            }
+        }
+
+        // Carregar configuração atual
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                currentConfig = await response.json();
+
+                // Preencher formulário
+                document.getElementById('openrouter_api_key').value = currentConfig.openrouter_api_key || '';
+                document.getElementById('ollama_host').value = currentConfig.ollama_host || 'host.docker.internal';
+                document.getElementById('ollama_port').value = currentConfig.ollama_port || '11434';
+                document.getElementById('ollama_model').value = currentConfig.ollama_model || 'llama3.2:1b';
+
+                // Load OpenRouter models first, then set the current model
+                await loadOpenRouterModels();
+
+                // Selecionar provedor atual
+                document.getElementById(currentConfig.provider + '-radio').checked = true;
+                updateProviderSections();
+
+            } catch (error) {
+                showAlert('Erro ao carregar configurações: ' + error.message, 'error');
+            }
+        }
+
+        // Atualizar seções visuais
+        function updateProviderSections() {
+            const provider = document.querySelector('input[name="provider"]:checked').value;
+            
+            document.getElementById('openrouter-section').classList.toggle('active', provider === 'openrouter');
+            document.getElementById('ollama-section').classList.toggle('active', provider === 'ollama');
+        }
+
+        // Testar provedor
+        async function testProvider(provider) {
+            const button = document.getElementById(`test-${provider}`);
+            const statusIndicator = document.getElementById(`${provider}-status`);
+            const statusText = document.getElementById(`${provider}-status-text`);
+            
+            button.disabled = true;
+            button.textContent = 'Testando...';
+            statusIndicator.className = 'status-indicator testing';
+            statusText.textContent = 'Testando...';
+            
+            try {
+                const config = getFormConfig();
+                const response = await fetch('/api/test-provider', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, ...config })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.status === 'online') {
+                    statusIndicator.className = 'status-indicator online';
+                    statusText.textContent = 'Online';
+                    showAlert(`${provider} está funcionando!`, 'success');
+                } else {
+                    statusIndicator.className = 'status-indicator';
+                    statusText.textContent = 'Offline';
+                    showAlert(`${provider} não está acessível: ${result.error || 'Erro desconhecido'}`, 'error');
+                }
+                
+            } catch (error) {
+                statusIndicator.className = 'status-indicator';
+                statusText.textContent = 'Erro';
+                showAlert(`Erro ao testar ${provider}: ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Testar';
+            }
+        }
+
+        // Obter configuração do formulário
+        function getFormConfig() {
+            return {
+                provider: document.querySelector('input[name="provider"]:checked').value,
+                openrouter_api_key: document.getElementById('openrouter_api_key').value,
+                openrouter_model: document.getElementById('openrouter_model').value,
+                ollama_host: document.getElementById('ollama_host').value,
+                ollama_port: document.getElementById('ollama_port').value,
+                ollama_model: document.getElementById('ollama_model').value
+            };
+        }
+
+        // Salvar configuração
+        async function saveConfig() {
+            try {
+                const config = getFormConfig();
+                
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('Configurações salvas com sucesso!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    showAlert('Erro ao salvar: ' + result.error, 'error');
+                }
+                
+            } catch (error) {
+                showAlert('Erro ao salvar configurações: ' + error.message, 'error');
+            }
+        }
+
+        // Mostrar alerta
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Event listeners
+        document.querySelectorAll('input[name="provider"]').forEach(radio => {
+            radio.addEventListener('change', updateProviderSections);
+        });
+
+        // Carregar configuração ao iniciar
+        loadConfig();
+    </script>
+</body>
+</html>

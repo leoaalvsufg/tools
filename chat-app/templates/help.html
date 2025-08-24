@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central de Ajuda - Grupo Alves</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            line-height: 1.6;
+        }
+
+        .help-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .help-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .help-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .help-subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .help-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+        }
+
+        .help-sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #6c757d;
+        }
+
+        .sidebar-item:hover,
+        .sidebar-item.active {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .sidebar-item i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .help-main {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-title i {
+            color: #667eea;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 40px;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .feature-description {
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+
+        .feature-examples {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .example-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .example-code {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+
+        .command-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .command-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .command-item:last-child {
+            border-bottom: none;
+        }
+
+        .command-syntax {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-right: 15px;
+            min-width: 200px;
+        }
+
+        .command-description {
+            color: #6c757d;
+        }
+
+        .tip-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .tip-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            border: 2px dashed #dee2e6;
+        }
+
+        .video-placeholder {
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .faq-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .faq-question {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #2c3e50;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .faq-question:hover {
+            background: #f8f9fa;
+        }
+
+        .faq-answer {
+            padding: 20px;
+            color: #6c757d;
+            display: none;
+        }
+
+        .faq-answer.show {
+            display: block;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .contact-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .contact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .contact-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .contact-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .contact-info {
+            opacity: 0.9;
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .back-to-top:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .back-to-top.show {
+            display: flex;
+        }
+
+        @media (max-width: 768px) {
+            .help-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .help-sidebar {
+                position: static;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="help-container">
+        <div class="help-header">
+            <h1 class="help-title">
+                <i class="fas fa-question-circle"></i>
+                Central de Ajuda
+            </h1>
+            <p class="help-subtitle">
+                Tudo que você precisa saber sobre o sistema de IA do Grupo Alves
+            </p>
+        </div>
+
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="🔍 Pesquisar na documentação..." id="searchInput">
+        </div>
+
+        <div class="help-content">
+            <div class="help-sidebar">
+                <h3 class="sidebar-title">Navegação</h3>
+                
+                <div class="sidebar-item active" onclick="showSection('overview')">
+                    <i class="fas fa-home"></i>
+                    <span>Visão Geral</span>
+                </div>
+                
+                <div class="sidebar-item" onclick="showSection('chat')">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat IA</span>
+                </div>
+                
+                <div class="sidebar-item" onclick="showSection('search')">
+                    <i class="fas fa-search"></i>
+                    <span>Pesquisa Web</span>
+                </div>
+                
+                <div class="sidebar-item" onclick="showSection('sql')">
+                    <i class="fas fa-database"></i>
+                    <span>SQL Assistant</span>
+                </div>
+                
+                <div class="sidebar-item" onclick="showSection('email')">
+                    <i class="fas fa-envelope"></i>
+                    <span>Email IA</span>
+                </div>
+                
+                <div class="sidebar-item" onclick="showSection('crm')">
+                    <i class="fas fa-users"></i>
+                    <span>CRM</span>
+                </div>
+                
+                <div class="sidebar-item" onclick="showSection('api')">
+                    <i class="fas fa-code"></i>
+                    <span>API</span>
+                </div>
+                
+                <div class="sidebar-item" onclick="showSection('faq')">
+                    <i class="fas fa-question"></i>
+                    <span>FAQ</span>
+                </div>
+                
+                <div class="sidebar-item" onclick="showSection('contact')">
+                    <i class="fas fa-headset"></i>
+                    <span>Suporte</span>
+                </div>
+            </div>
+
+            <div class="help-main">
+                <!-- Overview Section -->
+                <div id="overview" class="section active">
+                    <h2 class="section-title">
+                        <i class="fas fa-home"></i>
+                        Visão Geral do Sistema
+                    </h2>
+                    
+                    <p>O sistema de IA do Grupo Alves é uma plataforma completa que integra múltiplas ferramentas de inteligência artificial para otimizar processos empresariais.</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="feature-title">Chat IA Inteligente</div>
+                            <div class="feature-description">
+                                Conversação com IA que inclui pesquisa automática na web e memória persistente de conversas.
+                            </div>
+                            <div class="feature-examples">
+                                <div class="example-title">Exemplo de uso:</div>
+                                <div class="example-code">"Qual é o preço atual do bitcoin?"</div>
+                                <small>→ Busca automática + resposta contextualizada</small>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <div class="feature-title">SQL Assistant</div>
+                            <div class="feature-description">
+                                Converta linguagem natural em consultas SQL para múltiplos tipos de banco de dados.
+                            </div>
+                            <div class="feature-examples">
+                                <div class="example-title">Exemplo de uso:</div>
+                                <div class="example-code">"Mostre os clientes que compraram nos últimos 30 dias"</div>
+                                <small>→ Gera SQL automaticamente</small>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="feature-title">Email IA</div>
+                            <div class="feature-description">
+                                Sistema de email com assistente de resposta que analisa contexto e gera sugestões personalizadas.
+                            </div>
+                            <div class="feature-examples">
+                                <div class="example-title">Recursos:</div>
+                                <div class="example-code">• Análise de sentimento<br>• Sugestões de resposta<br>• Histórico de conversas</div>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="feature-title">CRM Inteligente</div>
+                            <div class="feature-description">
+                                Gestão de relacionamento com clientes usando IA para análise de padrões e insights.
+                            </div>
+                            <div class="feature-examples">
+                                <div class="example-title">Análises automáticas:</div>
+                                <div class="example-code">• Perfil de comunicação<br>• Tempo de resposta<br>• Satisfação do cliente</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tip-box">
+                        <div class="tip-title">
+                            <i class="fas fa-lightbulb"></i>
+                            Dica Importante
+                        </div>
+                        <p>Todas as ferramentas estão integradas e compartilham contexto. Uma pesquisa feita no Chat IA pode ser usada no Email IA para gerar respostas mais precisas.</p>
+                    </div>
+                </div>
+
+                <!-- Chat IA Section -->
+                <div id="chat" class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-comments"></i>
+                        Chat IA
+                    </h2>
+                    
+                    <p>O Chat IA é o coração do sistema, oferecendo conversação inteligente com pesquisa automática na web.</p>
+
+                    <div class="command-list">
+                        <h3>Comandos Especiais</h3>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">/search [consulta]</div>
+                            <div class="command-description">Força uma pesquisa web específica</div>
+                        </div>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">/scrape [URL]</div>
+                            <div class="command-description">Extrai conteúdo de uma página web</div>
+                        </div>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">/db [SQL]</div>
+                            <div class="command-description">Executa consulta SQL diretamente</div>
+                        </div>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">/schema [database]</div>
+                            <div class="command-description">Mostra estrutura do banco de dados</div>
+                        </div>
+                    </div>
+
+                    <div class="tip-box">
+                        <div class="tip-title">
+                            <i class="fas fa-magic"></i>
+                            Pesquisa Automática
+                        </div>
+                        <p>O sistema detecta automaticamente quando você precisa de informações atuais e faz a pesquisa sem você precisar usar comandos especiais!</p>
+                        <div class="example-code">
+                            Exemplos que ativam pesquisa automática:<br>
+                            • "Qual é o preço atual do dólar?"<br>
+                            • "Últimas notícias sobre tecnologia"<br>
+                            • "Como está o tempo hoje?"
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Section -->
+                <div id="search" class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-search"></i>
+                        Pesquisa Web
+                    </h2>
+                    
+                    <p>Interface dedicada para pesquisas avançadas na web com análise de conteúdo e exportação de resultados.</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <div class="feature-title">Pesquisa Avançada</div>
+                            <div class="feature-description">
+                                Busca em múltiplas fontes com análise de relevância e filtragem de conteúdo.
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="feature-title">Exportação</div>
+                            <div class="feature-description">
+                                Exporte resultados em formato Markdown, PDF ou texto simples.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <i class="fas fa-play-circle" style="font-size: 48px; color: #667eea;"></i>
+                            <p>Tutorial em vídeo em breve</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SQL Assistant Section -->
+                <div id="sql" class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-database"></i>
+                        SQL Assistant
+                    </h2>
+                    
+                    <p>Transforme linguagem natural em consultas SQL profissionais para qualquer banco de dados.</p>
+
+                    <div class="command-list">
+                        <h3>Exemplos de Consultas em Linguagem Natural</h3>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">Mostre todos os usuários ativos</div>
+                            <div class="command-description">→ SELECT * FROM users WHERE status = 'active'</div>
+                        </div>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">Vendas do último mês por produto</div>
+                            <div class="command-description">→ SELECT product, SUM(amount) FROM sales WHERE date >= DATE_SUB(NOW(), INTERVAL 1 MONTH) GROUP BY product</div>
+                        </div>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">Top 10 clientes por valor</div>
+                            <div class="command-description">→ SELECT customer, SUM(total) as value FROM orders GROUP BY customer ORDER BY value DESC LIMIT 10</div>
+                        </div>
+                    </div>
+
+                    <div class="tip-box">
+                        <div class="tip-title">
+                            <i class="fas fa-shield-alt"></i>
+                            Segurança
+                        </div>
+                        <p>Sempre use contas de banco de dados com permissões limitadas. O sistema suporta conexões somente leitura para maior segurança.</p>
+                    </div>
+                </div>
+
+                <!-- Email IA Section -->
+                <div id="email" class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-envelope"></i>
+                        Email IA
+                    </h2>
+                    
+                    <p>Sistema completo de email com assistente de IA para análise e geração de respostas.</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="feature-title">Assistente de Resposta</div>
+                            <div class="feature-description">
+                                Gera 3 tipos de resposta: profissional, amigável e concisa, baseado no contexto do email.
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="feature-title">Análise de Sentimento</div>
+                            <div class="feature-description">
+                                Analisa o tom do email (positivo, neutro, negativo) e nível de urgência.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CRM Section -->
+                <div id="crm" class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-users"></i>
+                        CRM Inteligente
+                    </h2>
+                    
+                    <p>Sistema de gestão de relacionamento com clientes que usa IA para extrair insights automáticos.</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="feature-title">Perfil Automático</div>
+                            <div class="feature-description">
+                                Cria perfis de clientes automaticamente baseado em interações por email.
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-analytics"></i>
+                            </div>
+                            <div class="feature-title">Analytics Avançado</div>
+                            <div class="feature-description">
+                                Dashboards com métricas de satisfação, tempo de resposta e padrões de comunicação.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Section -->
+                <div id="api" class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-code"></i>
+                        API e Integrações
+                    </h2>
+                    
+                    <p>Acesse todas as funcionalidades via API REST para integração com outros sistemas.</p>
+
+                    <div class="command-list">
+                        <h3>Principais Endpoints</h3>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">POST /api/chat</div>
+                            <div class="command-description">Enviar mensagem para o chat IA</div>
+                        </div>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">POST /api/sql/generate</div>
+                            <div class="command-description">Gerar SQL a partir de linguagem natural</div>
+                        </div>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">GET /api/customers</div>
+                            <div class="command-description">Listar clientes do CRM</div>
+                        </div>
+                        
+                        <div class="command-item">
+                            <div class="command-syntax">POST /api/email/compose</div>
+                            <div class="command-description">Gerar email com IA</div>
+                        </div>
+                    </div>
+
+                    <div class="tip-box">
+                        <div class="tip-title">
+                            <i class="fas fa-book"></i>
+                            Documentação Completa
+                        </div>
+                        <p>Acesse <a href="/api-docs" target="_blank" style="color: #667eea; text-decoration: none; font-weight: 600;">a documentação completa da API</a> para ver todos os endpoints, parâmetros e exemplos de uso.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Section -->
+                <div id="faq" class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-question"></i>
+                        Perguntas Frequentes
+                    </h2>
+
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFaq(this)">
+                            <span>Como funciona a pesquisa automática no chat?</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>O sistema analisa sua mensagem e detecta automaticamente quando você precisa de informações atuais. Palavras-chave como "atual", "hoje", "últimas notícias", "preço" ativam a pesquisa automática na web.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFaq(this)">
+                            <span>Posso conectar meu próprio banco de dados?</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Sim! O SQL Assistant suporta PostgreSQL, MySQL, SQLite e MongoDB. Você pode configurar múltiplas conexões e alternar entre elas conforme necessário.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFaq(this)">
+                            <span>Os dados dos clientes ficam seguros?</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Sim, todos os dados são criptografados e armazenados localmente. O sistema segue as melhores práticas de segurança e privacidade de dados.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFaq(this)">
+                            <span>Como exportar resultados de pesquisa?</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Após realizar uma pesquisa, clique no botão "Exportar" e escolha entre os formatos Markdown (.md), PDF ou texto (.txt). O download será iniciado automaticamente.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Section -->
+                <div id="contact" class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-headset"></i>
+                        Suporte e Contato
+                    </h2>
+                    
+                    <p>Precisa de ajuda? Entre em contato conosco através dos canais abaixo:</p>
+
+                    <div class="contact-grid">
+                        <div class="contact-card">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="contact-title">Email</div>
+                            <div class="contact-info">suporte@grupoalves.com</div>
+                        </div>
+
+                        <div class="contact-card">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="contact-title">Telefone</div>
+                            <div class="contact-info">(11) 9999-9999</div>
+                        </div>
+
+                        <div class="contact-card">
+                            <div class="contact-icon">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="contact-title">Chat Online</div>
+                            <div class="contact-info">Disponível 24/7</div>
+                        </div>
+
+                        <div class="contact-card">
+                            <div class="contact-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="contact-title">Documentação</div>
+                            <div class="contact-info">Guias completos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="back-to-top" id="backToTop" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script>
+        // Section navigation
+        function showSection(sectionId) {
+            // Update sidebar
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+        }
+
+        // FAQ toggle
+        function toggleFaq(element) {
+            const answer = element.nextElementSibling;
+            const icon = element.querySelector('i');
+            
+            answer.classList.toggle('show');
+            
+            if (answer.classList.contains('show')) {
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const sections = document.querySelectorAll('.section');
+            
+            sections.forEach(section => {
+                const content = section.textContent.toLowerCase();
+                const sectionId = section.id;
+                const sidebarItem = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
+                
+                if (content.includes(searchTerm) || searchTerm === '') {
+                    if (sidebarItem) sidebarItem.style.display = 'flex';
+                } else {
+                    if (sidebarItem) sidebarItem.style.display = 'none';
+                }
+            });
+        });
+
+        // Back to top functionality
+        window.addEventListener('scroll', function() {
+            const backToTop = document.getElementById('backToTop');
+            if (window.pageYOffset > 300) {
+                backToTop.classList.add('show');
+            } else {
+                backToTop.classList.remove('show');
+            }
+        });
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add smooth scrolling to all links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

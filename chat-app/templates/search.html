@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesquisa Web e Raspagem - Grupo Alves</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* iframe compatibility fixes */
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
+        .search-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 90vh;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-header {
+            background: white;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(90vh - 80px);
+        }
+
+        .search-section {
+            display: none;
+        }
+
+        .search-section.active {
+            display: block;
+        }
+
+        .search-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .results-container {
+            display: none;
+            max-height: 60vh;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+        }
+
+        .results-container.show {
+            display: block;
+        }
+
+        .result-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: box-shadow 0.3s;
+        }
+
+        .result-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 8px;
+        }
+
+        .result-url {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .result-content {
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+
+        .notification.error {
+            background: #f44336;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .history-item:hover {
+            background: #f5f5f5;
+        }
+
+        .history-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .history-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .search-commands {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .command-item {
+            margin-bottom: 8px;
+            font-family: monospace;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .answer-box {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .answer-title {
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🔍 Pesquisa Web</h2>
+                <p>Tavily AI</p>
+            </div>
+            <div class="sidebar-nav">
+                <div class="nav-item active" onclick="showSection('web-search')">
+                    🌐 Pesquisa Web
+                </div>
+                <div class="nav-item" onclick="showSection('scraping')">
+                    📄 Raspagem de Sites
+                </div>
+                <div class="nav-item" onclick="showSection('history')">
+                    📚 Histórico
+                </div>
+                <div class="nav-item" onclick="showSection('commands')">
+                    ⌨️ Comandos Chat
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+
+            <div class="content-body">
+                <!-- Web Search Section -->
+                <div id="web-search" class="search-section active">
+                    <div class="search-form">
+                        <div class="form-group">
+                            <label class="form-label">Digite sua pesquisa:</label>
+                            <input type="text" class="form-input" id="searchQuery" placeholder="Ex: últimas notícias sobre inteligência artificial">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Máximo de resultados:</label>
+                            <select class="form-select" id="maxResults">
+                                <option value="3">3 resultados</option>
+                                <option value="5" selected>5 resultados</option>
+                                <option value="10">10 resultados</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="performWebSearch()">🔍 Pesquisar</button>
+                        <button class="btn btn-secondary" onclick="exportResults('search')" style="display: none;" id="exportSearchBtn">📄 Exportar</button>
+                    </div>
+
+                    <div class="loading" id="searchLoading">
+                        🔍 Pesquisando na web...
+                    </div>
+
+                    <div class="results-container" id="searchResults"></div>
+                </div>
+
+                <!-- Scraping Section -->
+                <div id="scraping" class="search-section">
+                    <div class="search-form">
+                        <div class="form-group">
+                            <label class="form-label">URL do site para extrair:</label>
+                            <input type="url" class="form-input" id="scrapeUrl" placeholder="https://exemplo.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Tipo de extração:</label>
+                            <select class="form-select" id="extractType">
+                                <option value="text">Apenas texto</option>
+                                <option value="articles">Artigos principais</option>
+                                <option value="full">Conteúdo completo</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="performScraping()">📄 Extrair Conteúdo</button>
+                        <button class="btn btn-secondary" onclick="exportResults('scrape')" style="display: none;" id="exportScrapeBtn">📄 Exportar</button>
+                    </div>
+
+                    <div class="loading" id="scrapeLoading">
+                        📄 Extraindo conteúdo...
+                    </div>
+
+                    <div class="results-container" id="scrapeResults"></div>
+                </div>
+
+                <!-- History Section -->
+                <div id="history" class="search-section">
+                    <div class="loading" id="historyLoading">Carregando histórico...</div>
+                    <div id="historyResults"></div>
+                </div>
+
+                <!-- Commands Section -->
+                <div id="commands" class="search-section">
+                    <div class="search-commands">
+                        <h3>Comandos Disponíveis no Chat</h3>
+                        <p>Use estes comandos no chat principal para pesquisar e extrair conteúdo:</p>
+                        
+                        <div class="command-item">
+                            <strong>/search [sua pesquisa]</strong> - Pesquisa web com IA
+                        </div>
+                        <div class="command-item">
+                            <strong>/scrape [URL]</strong> - Extrai conteúdo de um site
+                        </div>
+                        
+                        <h4 style="margin-top: 20px;">Exemplos:</h4>
+                        <div class="command-item">
+                            /search últimas notícias sobre tecnologia
+                        </div>
+                        <div class="command-item">
+                            /scrape https://www.exemplo.com/artigo
+                        </div>
+                        
+                        <p style="margin-top: 15px;">
+                            <strong>Dica:</strong> O chat também detecta automaticamente quando você faz perguntas que precisam de informações atuais e realiza pesquisas web automaticamente!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Check if running in iframe and fix compatibility
+        const isInIframe = window !== window.top;
+
+        // Initialize Socket.IO with iframe compatibility
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            upgrade: true,
+            rememberUpgrade: true
+        });
+
+        let currentSessionId = localStorage.getItem('search_session_id') || generateUUID();
+        localStorage.setItem('search_session_id', currentSessionId);
+
+        // Fix for iframe API calls
+        function makeApiCall(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            };
+
+            return fetch(url, { ...defaultOptions, ...options });
+        }
+
+        // Socket event listeners
+        socket.on('search_completed', function(data) {
+            showNotification(`Pesquisa concluída: ${data.results_count} resultados encontrados`, 'success');
+        });
+
+        socket.on('scrape_completed', function(data) {
+            showNotification(`Conteúdo extraído: ${data.title}`, 'success');
+        });
+
+        // Utility functions
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+
+        // Navigation
+        function showSection(section) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.search-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(section).classList.add('active');
+
+            // Update title
+            const titles = {
+                'web-search': 'Pesquisa Web com IA',
+                'scraping': 'Raspagem de Sites',
+                'history': 'Histórico de Pesquisas',
+                'commands': 'Comandos do Chat'
+            };
+            document.getElementById('sectionTitle').textContent = titles[section];
+
+            // Load data if needed
+            if (section === 'history') {
+                loadHistory();
+            }
+        }
+
+        // Web search
+        async function performWebSearch() {
+            const query = document.getElementById('searchQuery').value.trim();
+            const maxResults = document.getElementById('maxResults').value;
+
+            if (!query) {
+                showNotification('Por favor, digite uma pesquisa', 'error');
+                return;
+            }
+
+            const loading = document.getElementById('searchLoading');
+            const results = document.getElementById('searchResults');
+            
+            loading.classList.add('show');
+            results.classList.remove('show');
+
+            try {
+                const response = await makeApiCall('/api/search/web', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        query: query,
+                        max_results: parseInt(maxResults),
+                        session_id: currentSessionId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displaySearchResults(data);
+                    results.classList.add('show');
+                    document.getElementById('exportSearchBtn').style.display = 'inline-block';
+                    window.lastSearchResults = data; // Store for export
+                } else {
+                    showNotification('Erro na pesquisa: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Erro de conexão: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // Display search results
+        function displaySearchResults(data) {
+            const container = document.getElementById('searchResults');
+            container.innerHTML = '';
+
+            // Answer box
+            if (data.answer) {
+                const answerDiv = document.createElement('div');
+                answerDiv.className = 'answer-box';
+                answerDiv.innerHTML = `
+                    <div class="answer-title">Resposta Direta:</div>
+                    <div>${data.answer}</div>
+                `;
+                container.appendChild(answerDiv);
+            }
+
+            // Search results
+            data.results.forEach(result => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result-item';
+                resultDiv.innerHTML = `
+                    <div class="result-title">${result.title}</div>
+                    <div class="result-url">${result.url}</div>
+                    <div class="result-content">${result.content}</div>
+                `;
+                container.appendChild(resultDiv);
+            });
+
+            // Follow-up questions
+            if (data.follow_up_questions && data.follow_up_questions.length > 0) {
+                const questionsDiv = document.createElement('div');
+                questionsDiv.innerHTML = `
+                    <h4 style="margin-top: 20px; margin-bottom: 10px;">Perguntas Relacionadas:</h4>
+                `;
+                data.follow_up_questions.forEach(question => {
+                    const questionBtn = document.createElement('button');
+                    questionBtn.className = 'btn btn-secondary';
+                    questionBtn.style.margin = '5px';
+                    questionBtn.textContent = question;
+                    questionBtn.onclick = () => {
+                        document.getElementById('searchQuery').value = question;
+                        performWebSearch();
+                    };
+                    questionsDiv.appendChild(questionBtn);
+                });
+                container.appendChild(questionsDiv);
+            }
+        }
+
+        // Web scraping
+        async function performScraping() {
+            const url = document.getElementById('scrapeUrl').value.trim();
+            const extractType = document.getElementById('extractType').value;
+
+            if (!url) {
+                showNotification('Por favor, digite uma URL', 'error');
+                return;
+            }
+
+            const loading = document.getElementById('scrapeLoading');
+            const results = document.getElementById('scrapeResults');
+            
+            loading.classList.add('show');
+            results.classList.remove('show');
+
+            try {
+                const response = await makeApiCall('/api/search/scrape', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        url: url,
+                        extract_type: extractType,
+                        session_id: currentSessionId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayScrapeResults(data);
+                    results.classList.add('show');
+                    document.getElementById('exportScrapeBtn').style.display = 'inline-block';
+                    window.lastScrapeResults = data; // Store for export
+                } else {
+                    showNotification('Erro na extração: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Erro de conexão: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // Display scrape results
+        function displayScrapeResults(data) {
+            const container = document.getElementById('scrapeResults');
+            container.innerHTML = `
+                <div class="result-item">
+                    <div class="result-title">${data.title}</div>
+                    <div class="result-url">${data.url}</div>
+                    <div class="result-content">${data.content}</div>
+                    <div style="margin-top: 15px; font-size: 12px; color: #666;">
+                        Tamanho total: ${data.content_length} caracteres
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load history
+        async function loadHistory() {
+            const loading = document.getElementById('historyLoading');
+            const results = document.getElementById('historyResults');
+            
+            loading.style.display = 'block';
+
+            try {
+                const response = await makeApiCall(`/api/search/history?session_id=${currentSessionId}&type=all&limit=50`);
+                const data = await response.json();
+
+                if (data.success) {
+                    results.innerHTML = '';
+                    
+                    if (data.searches.length === 0) {
+                        results.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Nenhuma pesquisa encontrada</p>';
+                    } else {
+                        data.searches.forEach(search => {
+                            const historyDiv = document.createElement('div');
+                            historyDiv.className = 'history-item';
+                            historyDiv.innerHTML = `
+                                <div class="history-title">
+                                    ${search.type === 'web' ? '🔍' : '📄'} ${search.title || search.query || search.url}
+                                </div>
+                                <div class="history-meta">
+                                    ${new Date(search.timestamp).toLocaleString('pt-BR')} • 
+                                    ${search.type === 'web' ? search.results_count + ' resultados' : 'Conteúdo extraído'}
+                                </div>
+                            `;
+                            historyDiv.onclick = () => viewHistoryItem(search.id);
+                            results.appendChild(historyDiv);
+                        });
+                    }
+                }
+            } catch (error) {
+                showNotification('Erro ao carregar histórico: ' + error.message, 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // View history item
+        async function viewHistoryItem(id) {
+            try {
+                const response = await makeApiCall(`/api/search/${id}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    if (data.type === 'web') {
+                        showSection('web-search');
+                        displaySearchResults(data.results);
+                        document.getElementById('searchResults').classList.add('show');
+                    } else {
+                        showSection('scraping');
+                        displayScrapeResults(data);
+                        document.getElementById('scrapeResults').classList.add('show');
+                    }
+                }
+            } catch (error) {
+                showNotification('Erro ao carregar item: ' + error.message, 'error');
+            }
+        }
+
+        // Enter key handlers
+        document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performWebSearch();
+            }
+        });
+
+        document.getElementById('scrapeUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performScraping();
+            }
+        });
+
+        // Export functions
+        function exportResults(type) {
+            const format = prompt('Escolha o formato de exportação:\n1 - Markdown (.md)\n2 - PDF\n3 - Texto (.txt)', '1');
+
+            if (!format || !['1', '2', '3'].includes(format)) {
+                return;
+            }
+
+            let content = '';
+            let filename = '';
+            let data = null;
+
+            if (type === 'search' && window.lastSearchResults) {
+                data = window.lastSearchResults;
+                filename = `pesquisa_${data.query.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}`;
+                content = generateSearchContent(data);
+            } else if (type === 'scrape' && window.lastScrapeResults) {
+                data = window.lastScrapeResults;
+                filename = `raspagem_${new Date().toISOString().split('T')[0]}`;
+                content = generateScrapeContent(data);
+            } else {
+                showNotification('Nenhum resultado para exportar', 'error');
+                return;
+            }
+
+            switch (format) {
+                case '1': // Markdown
+                    downloadFile(content, filename + '.md', 'text/markdown');
+                    break;
+                case '2': // PDF
+                    generatePDF(content, filename + '.pdf');
+                    break;
+                case '3': // Text
+                    downloadFile(content, filename + '.txt', 'text/plain');
+                    break;
+            }
+        }
+
+        function generateSearchContent(data) {
+            let content = `# Pesquisa Web: ${data.query}\n\n`;
+            content += `**Data:** ${new Date().toLocaleString('pt-BR')}\n\n`;
+
+            if (data.answer) {
+                content += `## Resposta Direta\n\n${data.answer}\n\n`;
+            }
+
+            content += `## Resultados Encontrados (${data.results.length})\n\n`;
+
+            data.results.forEach((result, index) => {
+                content += `### ${index + 1}. ${result.title}\n\n`;
+                content += `**URL:** ${result.url}\n\n`;
+                content += `**Conteúdo:** ${result.content}\n\n`;
+                content += `---\n\n`;
+            });
+
+            if (data.follow_up_questions && data.follow_up_questions.length > 0) {
+                content += `## Perguntas Relacionadas\n\n`;
+                data.follow_up_questions.forEach(question => {
+                    content += `- ${question}\n`;
+                });
+            }
+
+            return content;
+        }
+
+        function generateScrapeContent(data) {
+            let content = `# Conteúdo Extraído\n\n`;
+            content += `**URL:** ${data.url}\n\n`;
+            content += `**Título:** ${data.title}\n\n`;
+            content += `**Data de Extração:** ${new Date().toLocaleString('pt-BR')}\n\n`;
+            content += `**Tamanho:** ${data.content_length} caracteres\n\n`;
+            content += `---\n\n`;
+            content += `## Conteúdo\n\n${data.content}\n\n`;
+
+            if (data.metadata && Object.keys(data.metadata).length > 0) {
+                content += `## Metadados\n\n`;
+                Object.entries(data.metadata).forEach(([key, value]) => {
+                    if (value) {
+                        content += `**${key}:** ${value}\n\n`;
+                    }
+                });
+            }
+
+            return content;
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification(`Arquivo ${filename} baixado com sucesso!`, 'success');
+        }
+
+        function generatePDF(content, filename) {
+            // Simple PDF generation using browser print
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>${filename}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+                        h1, h2, h3 { color: #333; }
+                        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+                        hr { border: 1px solid #ddd; margin: 20px 0; }
+                    </style>
+                </head>
+                <body>
+                    <pre>${content}</pre>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+
+            setTimeout(() => {
+                printWindow.print();
+                showNotification('PDF gerado! Use Ctrl+P para salvar como PDF', 'success');
+            }, 500);
+        }
+    </script>
+</body>
+</html>
